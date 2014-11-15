@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<title>Artificial neural network test</title>
+	<meta name="description" content="Artificial neural network test">
+	<meta name="author" content="Martin Vyšňovský (martinvysnovsky@gmail.com)">
+
+	<style>
+		canvas {
+			border: solid 1px #ccc;
+		}
+	</style>
+</head>
+<body>
+	<canvas id="main_canvas" width="500" height="500"></canvas>
+	<script src="js/NeuralNetwork/NeuralNetwork.js"></script>
+	<script>
+		'use strict';
+
+		// data definition
+		var circleRadius = 200;
+		var trainSetSize = 500;
+
+		// learn config
+		var numCycles    = 100;
+		var gamma        = 0.2;
+		
+		// network
+		var nn = new NeuralNetwork();
+
+		// layers
+		var inputLayer  = new Layer();
+		var hiddenLayer = new Layer();
+		var outputLayer = new Layer();
+
+		// add layers to network
+		nn.addLayer(inputLayer);
+		nn.addLayer(hiddenLayer);
+		nn.addLayer(outputLayer);
+
+		// add neurons to layers
+		inputLayer.addNeurons(SigmoidNeuron, 3);
+		hiddenLayer.addNeurons(SigmoidNeuron, 30);
+		outputLayer.addNeurons(SigmoidNeuron, 1);
+
+		nn.initialize(function()
+		{
+			return (Math.random() * 2) - 1; // from -1 to 1
+		});
+
+		var trainSet = new Array(trainSetSize);
+
+		for(var i=0; i<trainSetSize; i++)
+		{
+	    	var x = Math.abs(Math.floor(Math.random() * 500));
+	    	var y = Math.abs(Math.floor(Math.random() * 500));
+
+	    	// coords from middle
+	    	var x_mid = x - 250;
+	    	var y_mid = y - 250;
+
+	    	var o = (Math.sqrt(x_mid*x_mid + y_mid*y_mid) <= circleRadius) ? 1 : 0;
+
+	    	// third value is bias
+	    	trainSet[i] = {
+	    		real  : [x, y, -1],						    // real coordinates
+	    		input : [normalize(x), normalize(y), -1],	// normalized to range from -1 to 1
+	    		output: [o]
+	    	};
+	    }
+
+	    // learning
+	   	for(var c=0; c<numCycles; c++)
+	    {
+	    	for(var i=0; i<trainSetSize; i++)
+			{
+				var trainSetUnit = trainSet[i];
+
+				nn.backprop(trainSetUnit.input, trainSetUnit.output, gamma);
+			}
+	    }
+
+		// draw result to canvas
+		var canvas = document.getElementById('main_canvas');
+		var ctx    = canvas.getContext('2d');
+
+		for(var y=0; y<=500; y++)
+		{
+			for(var x=0; x<=500; x++)
+			{
+				var output = nn.getOutput([normalize(x), normalize(y), -1]);
+
+				if(output[0] > 0.5)
+					ctx.fillStyle = 'red';
+				else
+					ctx.fillStyle = 'green';
+
+				ctx.beginPath();
+				ctx.arc(x, y, 1, 0, 2*Math.PI, true);
+				ctx.closePath();
+				ctx.fill();
+			}
+		}
+
+		/**
+		 * Function to normalize coords to range from -1 to 1
+		 *
+		 * @param   {int}  x  Coord
+		 *
+		 * @return  {floar}
+		 */
+		function normalize(x)
+		{
+			return (x / 250) - 1;
+		}
+	</script>
+</body>
+</html>
