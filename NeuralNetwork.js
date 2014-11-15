@@ -589,6 +589,55 @@ SigmoidNeuron.prototype.computeError = function()
 };
 
 /**
+ * Artificial spiking neuron
+ */
+function SpikingNeuron(options)
+{
+	Neuron.call(this);
+
+	options = options || {};
+
+	// set neuron
+	this.a = options.a || 0.02;
+	this.b = options.b || 0.2;
+	this.c = options.c || -65; // in mV
+	this.d = options.d || 2;
+ 
+	this.potencial = options.potencial || this.c;			// membrane potencial
+	this.u         = options.u         || this.b * this.potencial;  // recovery variable
+
+	this.threshold = options.threshold || 30; // in mV
+}
+
+SpikingNeuron.prototype = Object.create(Neuron.prototype);
+
+/**
+ * Method to compute and set output from neuron
+ *
+ * @param   {float}  input  Input to neuron in mV
+ *
+ * @return  {float}  Output from neuron
+ */
+SpikingNeuron.prototype.computeOutput = function(input)
+{
+	if(this.potencial >= this.threshold) // neuron will fire spike
+	{
+		this.output = 1;
+
+		// reset neuron
+		this.potencial = this.c;
+		this.u        += this.d;
+	}
+	else
+		this.output = 0;
+
+	this.potencial = this.potencial + ((0.04 * this.potencial * this.potencial) + (5 * this.potencial) + 140 - this.u + input);
+	this.u         = this.u + (this.a * ((this.b * this.potencial) - this.u));
+
+	return this.output;
+};
+
+/**
  * Connection object between neurons
  *
  * @param  {Neuron}  fromNeuron  Neuron where connection starts
